@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blackjack</title>
+    <style>
+        /* General Styling */
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Welcome Section */
+        #welcome {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        /* Rules Section */
+        #rules {
+            margin: 20px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: #f9f9f9;
+        }
+
+        /* Card Display */
+        #dealer-cards, #player-cards {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .card {
+            width: 50px;
+            height: 70px;
+            border: 1px solid black;
+            border-radius: 5px;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            padding: 2px;
+            box-sizing: border-box;
+        }
+
+        .card .top-left-value {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-size: 20px;
+        }
+
+        .card .suit {
+            font-size: 32px;
+            line-height: 1;
+            text-align: center;
+            margin: auto;
+        }
+
+        .card .bottom-right-value {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            font-size: 20px;
+            transform: rotate(180deg);
+        }
+
+        /* Buttons and Controls */
+        #game-controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        #hit-btn, #stand-btn {
+            margin: 10px;
+            padding: 5px 10px;
+            font-size: 1em;
+        }
+
+        #new-game-btn, #next-round-btn, #end-game-btn {
+            font-size: 1.5em;
+            background-color: black;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        #new-game-btn:hover, #next-round-btn:hover, #end-game-btn:hover {
+            background-color: #333;
+        }
+
+        #message {
+            margin-top: 10px;
+            font-size: 1.2em;
+        }
+
+        /* Chip Counts */
+        #chip-counts {
+            margin-top: 20px;
+        }
+
+        #chip-counts p {
+            font-size: 1.2em;
+            margin: 5px 0;
+        }
+
+        /* High Roller Board */
+        #high-roller-board {
+            margin-top: 20px;
+        }
+
+        #high-roller-board ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        #high-roller-board li {
+            font-size: 1.2em;
+        }
+
+        /* Current Bet Section */
+        #current-bet-display {
+            margin-top: 20px;
+            font-size: 1.2em;
+        }
+    </style>
+</head>
+<body>
+<div id="welcome">
+    <h1>Welcome to Hit or Commit!</h1>
+    <p>Test your skills against the dealer and try to hit that perfect 21</p>
+</div>
+
+<div id="game-container">
+    <div>
+        <h2>Dealer's Cards</h2>
+        <div id="dealer-cards"></div>
+    </div>
+    <div>
+        <h2>Your Cards</h2>
+        <div id="player-cards"></div>
+    </div>
+    <div id="game-controls">
+        <button id="hit-btn">Hit</button>
+        <button id="stand-btn">Stand</button>
+    </div>
+    <button id="new-game-btn">New Game</button>
+    <button id="next-round-btn">Next Round</button>
+    <button id="end-game-btn">End Game</button>
+    <div>
+        <h3 id="message"></h3>
+    </div>
+</div>
+
+<div id="chip-counts">
+    <h3>Chip Counts:</h3>
+    <p>Player: <span id="player-chips">1000</span> Git Chips</p>
+    <p>Dealer: <span id="dealer-chips">1000</span> Git Chips</p>
+</div>
+
+<div id="current-bet-display">
+    <p>Current Bet: <span id="current-bet">0</span> Git Chips</p>
+</div>
+
+<div id="high-roller-board">
+    <h3>High Roller Board:</h3>
+    <ul id="high-rollers-list"></ul>
+</div>
+
+<div id="rules">
+    <h2>Blackjack Rules</h2>
+    <p>
+        The goal of Blackjack is to beat the dealer’s hand without exceeding a total value of 21.<br>
+        - Number cards: Face value<br>
+        - Face cards (Jack, Queen, King): 10 points each<br>
+        - Ace: 1 or 11 points (whichever benefits the hand)<br>
+        <br>
+        Aces are flexible, and you can change their value based on what gives you the best total score.
+        If you exceed 21, you “bust” and lose the round.
+    </p>
+</div>
+
+<script src="Card.js"></script>
+<script src="Deck.js"></script>
+<script src="Hand.js"></script>
+<script src="BlackJackGame.js"></script>
+<script src="main.js"></script>
+</body>
+</html>
