@@ -45,6 +45,13 @@ function createCardElement(card) {
     cardDiv.appendChild(suitDiv);
     cardDiv.appendChild(bottomValueDiv);
 
+    // Set the card color: red for hearts and diamonds, black for others
+    if (card.suit === "Hearts" || card.suit === "Diamonds") {
+        cardDiv.style.color = "red";
+    } else {
+        cardDiv.style.color = "black";
+    }
+
     return cardDiv;
 }
 
@@ -72,10 +79,11 @@ function promptBet() {
 
     let bet;
     do {
-        bet = prompt(`Enter your bet amount (Max: ${game.playerChips}):`);
-        if (bet === null) return; // canceled
-        bet = parseInt(bet);
-    } while (isNaN(bet) || bet <= 0 || bet > game.playerChips);
+        let input = prompt(`Enter your bet amount (Max: ${game.playerChips}):`);
+        if (input === null) return; // cancelled by user
+        input = input.trim();
+        bet = Number(input);
+    } while (!Number.isInteger(bet) || bet <= 0 || bet > game.playerChips);
 
     game.placeBet(bet);
     game.currentBet = bet; // keep in sync if placeBet doesn't do so
@@ -200,19 +208,21 @@ function handleEndGame() {
 // ----------------------
 // High Roller Tracking
 // ----------------------
-/*
-let highRollers = {};
 
+// Use localStorage to persist high rollers across sessions
 function updateHighRollers(name, chips) {
-    if (!highRollers[name] || chips > highRollers[name]) {
-        highRollers[name] = chips;
+    const stored = JSON.parse(localStorage.getItem("highRollers") || "{}");
+    if (!stored[name] || chips > stored[name]) {
+        stored[name] = chips;
     }
+    localStorage.setItem("highRollers", JSON.stringify(stored));
 }
 
 function updateHighRollerBoard() {
+    const stored = JSON.parse(localStorage.getItem("highRollers") || "{}");
     const list = document.getElementById("high-rollers-list");
     list.innerHTML = "";
-    Object.entries(highRollers)
+    Object.entries(stored)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10)
         .forEach(([name, chips]) => {
@@ -221,22 +231,3 @@ function updateHighRollerBoard() {
             list.appendChild(listItem);
         });
 }
-*/
-// ----------------------
-// Reset Game
-// ----------------------
-function resetGame() {
-    game = null;
-    playerName = "";
-    updateChipCounts();
-    updateHighRollerBoard();
-}
-
-// ----------------------
-// Event Listeners
-// ----------------------
-document.getElementById("new-game-btn").addEventListener("click", handleNewGame);
-document.getElementById("next-round-btn").addEventListener("click", handleNextRound);
-document.getElementById("hit-btn").addEventListener("click", handleHit);
-document.getElementById("stand-btn").addEventListener("click", handleStand);
-document.getElementById("end-game-btn").addEventListener("click", handleEndGame);
