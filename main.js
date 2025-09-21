@@ -237,3 +237,29 @@ function resetGame() {
     // Reload the page to reset all variables and UI
     location.reload();
 }
+
+// ----------------------
+// Event Listeners
+// ----------------------
+// Attach event listeners once the DOM is fully loaded. This replaces inline
+// onclick attributes in the HTML and cleanly binds buttons to their handlers.
+if (typeof window !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', () => {
+        const newGameBtn = document.getElementById('new-game-btn');
+        const nextRoundBtn = document.getElementById('next-round-btn');
+        const endGameBtn = document.getElementById('end-game-btn');
+        const hitBtn = document.getElementById('hit-btn');
+        const standBtn = document.getElementById('stand-btn');
+
+        if (newGameBtn) newGameBtn.addEventListener('click', handleNewGame);
+        if (nextRoundBtn) nextRoundBtn.addEventListener('click', handleNextRound);
+        if (endGameBtn) endGameBtn.addEventListener('click', handleEndGame);
+        if (hitBtn) hitBtn.addEventListener('click', handleHit);
+        if (standBtn) standBtn.addEventListener('click', handleStand);
+
+        // Optionally render any existing high roller data on initial page load
+        if (typeof updateHighRollerBoard === 'function') {
+            updateHighRollerBoard();
+        }
+    });
+}
