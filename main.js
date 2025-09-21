@@ -231,3 +231,9 @@ function updateHighRollerBoard() {
             list.appendChild(listItem);
         });
 }
+
+// Reset the game state. This simply reloads the page to ensure a clean start.
+function resetGame() {
+    // Reload the page to reset all variables and UI
+    location.reload();
+}
