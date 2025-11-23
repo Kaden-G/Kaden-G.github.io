@@ -1,5 +1,6 @@
 let game;
 let playerName = "";
+let pendingBet = 0;
 
 // ----------------------
 // Creating Card Elements
@@ -8,7 +9,6 @@ function createCardElement(card) {
     const cardDiv = document.createElement("div");
     cardDiv.className = "card";
 
-    // Map suit names to symbols
     const suitSymbols = {
         Hearts: "♥",
         Diamonds: "♦",
@@ -17,7 +17,6 @@ function createCardElement(card) {
     };
     const suitSymbol = suitSymbols[card.suit] || card.suit;
 
-    // Shorten face cards and Aces
     const shortValue = (card.value === "Ace")
         ? "A"
         : (card.value === "King")
@@ -28,7 +27,6 @@ function createCardElement(card) {
                     ? "J"
                     : card.value;
 
-    // Position the card values
     const topValueDiv = document.createElement("div");
     topValueDiv.className = "top-left-value";
     topValueDiv.textContent = shortValue;
@@ -45,7 +43,6 @@ function createCardElement(card) {
     cardDiv.appendChild(suitDiv);
     cardDiv.appendChild(bottomValueDiv);
 
-    // Set the card color: red for hearts and diamonds, black for others
     if (card.suit === "Hearts" || card.suit === "Diamonds") {
         cardDiv.style.color = "red";
     } else {
@@ -55,146 +52,310 @@ function createCardElement(card) {
     return cardDiv;
 }
 
-// ----------------------
-// Updating Chip Counts
-// ----------------------
-function updateChipCounts() {
-    if (!game) return;
-
-    document.getElementById("player-chips").textContent = game.playerChips;
-    document.getElementById("dealer-chips").textContent = game.dealerChips;
-    document.getElementById("current-bet").textContent = game.currentBet;
+function createCardBack() {
+    const cardBack = document.createElement("div");
+    cardBack.className = "card-back";
+    cardBack.textContent = "?";
+    return cardBack;
 }
 
 // ----------------------
-// Prompting a Bet
-// ----------------------
-function promptBet() {
-    // If the player has no chips, end the game
-    if (game.playerChips <= 0) {
-        alert("You have no more chips left! Game over.");
-        handleEndGame();
-        return;
-    }
-
-    let bet;
-    do {
-        let input = prompt(`Enter your bet amount (Max: ${game.playerChips}):`);
-        if (input === null) return; // cancelled by user
-        input = input.trim();
-        bet = Number(input);
-    } while (!Number.isInteger(bet) || bet <= 0 || bet > game.playerChips);
-
-    game.placeBet(bet);
-    game.currentBet = bet; // keep in sync if placeBet doesn't do so
-
-    updateChipCounts();
-}
-
-// ----------------------
-// Updating the UI
+// Updating UI
 // ----------------------
 function updateUI() {
     if (!game) return;
 
     const dealerCardsContainer = document.getElementById("dealer-cards");
     const playerCardsContainer = document.getElementById("player-cards");
-    const messageElement = document.getElementById("message");
 
-    // Clear old cards
     dealerCardsContainer.innerHTML = "";
     playerCardsContainer.innerHTML = "";
 
-    // Display new cards
-    game.dealerHand.cards.forEach(card => {
-        dealerCardsContainer.appendChild(createCardElement(card));
+    // Display dealer cards (hide hole card if needed)
+    game.dealerHand.cards.forEach((card, index) => {
+        if (index === 1 && game.dealerHoleCardHidden) {
+            dealerCardsContainer.appendChild(createCardBack());
+        } else {
+            dealerCardsContainer.appendChild(createCardElement(card));
+        }
     });
+
+    // Display player cards
     game.playerHand.cards.forEach(card => {
         playerCardsContainer.appendChild(createCardElement(card));
     });
 
-    // Clear message
-    messageElement.textContent = "";
-
-    // Update chip counts
+    updateHandTotals();
     updateChipCounts();
+    updateButtonStates();
 }
 
-// ----------------------
-// New Game
-// ----------------------
-function handleNewGame() {
-    // 1) Create brand-new game
-    game = new BlackjackGame();
-
-    // 2) Start Round (deal initial cards, shuffle if needed)
-    game.startRound();
-
-    // 3) Update UI for fresh round
-    updateUI();
-
-    // 4) Prompt for bet AFTER dealing
-    promptBet();
-}
-
-// ----------------------
-// Next Round
-// ----------------------
-function handleNextRound() {
-    if (!game) {
-        alert("No active game. Click 'New Game' first.");
-        return;
-    }
-    if (game.playerChips <= 0) {
-        alert("You're out of chips! Please start a New Game.");
-        return;
-    }
-    if (game.dealerChips <= 0) {
-        alert("Dealer is out of chips! You win. Start a New Game to reset.");
-        return;
-    }
-
-    // 1) Start Round (re-deal)
-    game.startRound();
-
-    // 2) Update UI
-    updateUI();
-
-    // 3) Prompt for a new bet
-    promptBet();
-}
-
-// ----------------------
-// Hit / Stand / End Game
-// ----------------------
-function handleHit() {
-    game.playerHits();
-    updateUI();
-
-    if (game.playerHand.calculateTotalValue() > 21) {
-        document.getElementById("message").textContent = "You busted! Dealer wins.";
-    }
-}
-
-function handleStand() {
+function updateHandTotals() {
     if (!game) return;
 
-    // Dealer’s turn completes
-    game.playerStands();
+    const dealerTotal = document.getElementById("dealer-total");
+    const playerTotal = document.getElementById("player-total");
 
-    // 1) Determine who won & adjust chips
-    const result = game.determineOutcome();
+    if (game.dealerHoleCardHidden) {
+        const firstCard = game.dealerHand.cards[0];
+        let firstCardValue = parseInt(firstCard.value);
+        if (isNaN(firstCardValue)) {
+            firstCardValue = firstCard.value === "Ace" ? 11 : 10;
+        }
+        dealerTotal.textContent = `Showing: ${firstCardValue}`;
+    } else {
+        dealerTotal.textContent = `Total: ${game.dealerHand.calculateTotalValue()}`;
+    }
 
-    // 2) Update the UI to show updated chip counts
+    const playerValue = game.playerHand.calculateTotalValue();
+    playerTotal.textContent = `Total: ${playerValue}`;
+
+    if (game.playerHand.isBlackjack()) {
+        playerTotal.textContent += " - BLACKJACK!";
+    } else if (playerValue > 21) {
+        playerTotal.textContent += " - BUST!";
+    }
+}
+
+function updateChipCounts() {
+    if (!game) return;
+
+    document.getElementById("player-chips").textContent = game.playerChips;
+    document.getElementById("current-bet").textContent = pendingBet > 0 ? pendingBet : game.currentBet;
+}
+
+function updateButtonStates() {
+    if (!game) return;
+
+    document.getElementById("hit-btn").disabled = !game.canHit();
+    document.getElementById("stand-btn").disabled = !game.canStand();
+    document.getElementById("double-btn").disabled = !game.canDoubleDown();
+    document.getElementById("split-btn").disabled = !game.canSplit();
+    document.getElementById("surrender-btn").disabled = !game.canSurrender();
+    document.getElementById("insurance-btn").disabled = !game.canOfferInsurance();
+
+    // Betting controls
+    const bettingInProgress = !game.roundInProgress && pendingBet === 0;
+    const canPlaceBet = pendingBet > 0 && pendingBet <= game.playerChips;
+
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+        const amount = parseInt(btn.dataset.amount);
+        btn.disabled = game.roundInProgress || amount > game.playerChips;
+    });
+
+    document.getElementById("place-bet-btn").disabled = !canPlaceBet;
+    document.getElementById("clear-bet-btn").disabled = pendingBet === 0;
+    document.getElementById("next-round-btn").disabled = game.roundInProgress;
+}
+
+function showMessage(msg) {
+    document.getElementById("message").textContent = msg;
+}
+
+// ----------------------
+// Betting Functions
+// ----------------------
+function handleChipClick(event) {
+    if (!game || game.roundInProgress) return;
+
+    const amount = parseInt(event.target.dataset.amount);
+    if (pendingBet + amount <= game.playerChips) {
+        pendingBet += amount;
+        updateChipCounts();
+        updateButtonStates();
+    }
+}
+
+function handleClearBet() {
+    pendingBet = 0;
+    updateChipCounts();
+    updateButtonStates();
+}
+
+async function handlePlaceBet() {
+    if (!game || pendingBet <= 0 || pendingBet > game.playerChips) return;
+
+    const error = game.placeBet(pendingBet);
+    if (error) {
+        showMessage(error);
+        return;
+    }
+
+    pendingBet = 0;
+    game.dealInitialCards();
     updateUI();
 
-    // 3) Display the result message
-    document.getElementById("message").textContent = result;
+    // Check for insurance offer
+    if (game.canOfferInsurance()) {
+        showMessage("Dealer showing Ace! Insurance available.");
+        return;
+    }
+
+    // Check for dealer blackjack
+    if (game.dealerHand.cards[0].value === 'Ace' ||
+        ['10', 'Jack', 'Queen', 'King'].includes(game.dealerHand.cards[0].value)) {
+        if (game.checkDealerBlackjack()) {
+            updateUI();
+            const outcome = game.determineOutcome();
+            showMessage(outcome);
+            game.roundInProgress = false;
+            updateButtonStates();
+            return;
+        }
+    }
+
+    // Check for player blackjack
+    if (game.playerHand.isBlackjack()) {
+        game.dealerHoleCardHidden = false;
+        updateUI();
+        const outcome = game.determineOutcome();
+        showMessage(outcome);
+        game.roundInProgress = false;
+        updateButtonStates();
+        return;
+    }
+
+    showMessage("Make your move!");
+}
+
+// ----------------------
+// Game Action Handlers
+// ----------------------
+async function handleHit() {
+    if (!game.canHit()) return;
+
+    game.playerHit();
+    updateUI();
+
+    if (game.playerHand.isBust()) {
+        showMessage("You busted! Dealer wins.");
+        game.roundInProgress = false;
+        updateButtonStates();
+    }
+}
+
+async function handleStand() {
+    if (!game.canStand()) return;
+
+    showMessage("Dealer's turn...");
+    updateButtonStates();
+
+    await game.handleDealerTurn();
+    updateUI();
+
+    const outcome = game.determineOutcome();
+    showMessage(outcome);
+    game.roundInProgress = false;
+    updateButtonStates();
+}
+
+async function handleDoubleDown() {
+    if (!game.canDoubleDown()) return;
+
+    const error = game.playerDoubleDown();
+    if (error) {
+        showMessage(error);
+        return;
+    }
+
+    updateUI();
+
+    if (game.playerHand.isBust()) {
+        showMessage("You busted! Dealer wins.");
+        game.roundInProgress = false;
+        updateButtonStates();
+        return;
+    }
+
+    showMessage("Dealer's turn...");
+    updateButtonStates();
+
+    await game.handleDealerTurn();
+    updateUI();
+
+    const outcome = game.determineOutcome();
+    showMessage(outcome);
+    game.roundInProgress = false;
+    updateButtonStates();
+}
+
+async function handleSplit() {
+    if (!game.canSplit()) return;
+
+    const error = game.playerSplit();
+    if (error) {
+        showMessage(error);
+        return;
+    }
+
+    updateUI();
+    showMessage("Playing split hands - feature coming soon!");
+}
+
+function handleSurrender() {
+    if (!game.canSurrender()) return;
+
+    game.playerSurrender();
+    updateUI();
+    showMessage("You surrendered. Half your bet returned.");
+    updateButtonStates();
+}
+
+function handleInsurance() {
+    if (!game.canOfferInsurance()) return;
+
+    const error = game.placeInsurance();
+    if (error) {
+        showMessage(error);
+        return;
+    }
+
+    updateUI();
+
+    // Check if dealer has blackjack
+    if (game.checkDealerBlackjack()) {
+        updateUI();
+        showMessage("Dealer has Blackjack! Insurance pays 2:1.");
+        const outcome = game.determineOutcome();
+        showMessage(outcome);
+        game.roundInProgress = false;
+        updateButtonStates();
+    } else {
+        showMessage("Dealer doesn't have Blackjack. Insurance lost.");
+        updateButtonStates();
+    }
+}
+
+// ----------------------
+// Game Flow Handlers
+// ----------------------
+function handleNewGame() {
+    game = new BlackjackGame();
+    pendingBet = 0;
+    showMessage("Place your bet to start!");
+    updateUI();
+}
+
+function handleNextRound() {
+    if (!game) {
+        showMessage("Start a new game first!");
+        return;
+    }
+
+    if (game.playerChips <= 0) {
+        showMessage("You're out of chips! Start a new game.");
+        return;
+    }
+
+    game.startRound();
+    pendingBet = 0;
+    showMessage("Place your bet!");
+    updateUI();
 }
 
 function handleEndGame() {
     if (!playerName) {
-        playerName = prompt("What’s your name?");
+        playerName = prompt("What's your name?") || "Anonymous";
     }
 
     if (game) {
@@ -202,14 +363,25 @@ function handleEndGame() {
         updateHighRollerBoard();
     }
 
-    resetGame();
+    showMessage(`Thanks for playing, ${playerName}! Final chips: ${game ? game.playerChips : 0}`);
+
+    setTimeout(() => {
+        game = null;
+        pendingBet = 0;
+        document.getElementById("dealer-cards").innerHTML = "";
+        document.getElementById("player-cards").innerHTML = "";
+        document.getElementById("dealer-total").textContent = "";
+        document.getElementById("player-total").textContent = "";
+        document.getElementById("player-chips").textContent = "0";
+        document.getElementById("current-bet").textContent = "0";
+        showMessage("Click 'New Game' to play again!");
+        updateButtonStates();
+    }, 3000);
 }
 
 // ----------------------
-// High Roller Tracking
+// High Roller Board
 // ----------------------
-
-// Use localStorage to persist high rollers across sessions
 function updateHighRollers(name, chips) {
     const stored = JSON.parse(localStorage.getItem("highRollers") || "{}");
     if (!stored[name] || chips > stored[name]) {
@@ -222,45 +394,51 @@ function updateHighRollerBoard() {
     const stored = JSON.parse(localStorage.getItem("highRollers") || "{}");
     const list = document.getElementById("high-rollers-list");
     list.innerHTML = "";
-    Object.entries(stored)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .forEach(([name, chips]) => {
-            const listItem = document.createElement("li");
-            listItem.textContent = `${name}: ${chips} chips`;
-            list.appendChild(listItem);
-        });
-}
 
-// Reset the game state. This simply reloads the page to ensure a clean start.
-function resetGame() {
-    // Reload the page to reset all variables and UI
-    location.reload();
+    const entries = Object.entries(stored)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10);
+
+    if (entries.length === 0) {
+        const listItem = document.createElement("li");
+        listItem.textContent = "No high rollers yet!";
+        list.appendChild(listItem);
+        return;
+    }
+
+    entries.forEach(([name, chips], index) => {
+        const listItem = document.createElement("li");
+        listItem.textContent = `${index + 1}. ${name}: ${chips} chips`;
+        list.appendChild(listItem);
+    });
 }
 
 // ----------------------
 // Event Listeners
 // ----------------------
-// Attach event listeners to buttons. Because this script is loaded at the end
-// of the body, the DOM elements already exist, so we can bind handlers
-// immediately. This replaces inline onclick attributes and ensures the
-// controls respond to user actions.
 (function attachEventListeners() {
     if (typeof document === 'undefined') return;
-    const newGameBtn = document.getElementById('new-game-btn');
-    const nextRoundBtn = document.getElementById('next-round-btn');
-    const endGameBtn = document.getElementById('end-game-btn');
-    const hitBtn = document.getElementById('hit-btn');
-    const standBtn = document.getElementById('stand-btn');
 
-    if (newGameBtn) newGameBtn.addEventListener('click', handleNewGame);
-    if (nextRoundBtn) nextRoundBtn.addEventListener('click', handleNextRound);
-    if (endGameBtn) endGameBtn.addEventListener('click', handleEndGame);
-    if (hitBtn) hitBtn.addEventListener('click', handleHit);
-    if (standBtn) standBtn.addEventListener('click', handleStand);
+    // Game action buttons
+    document.getElementById('hit-btn').addEventListener('click', handleHit);
+    document.getElementById('stand-btn').addEventListener('click', handleStand);
+    document.getElementById('double-btn').addEventListener('click', handleDoubleDown);
+    document.getElementById('split-btn').addEventListener('click', handleSplit);
+    document.getElementById('surrender-btn').addEventListener('click', handleSurrender);
+    document.getElementById('insurance-btn').addEventListener('click', handleInsurance);
 
-    // Render any existing high roller data on initial page load
-    if (typeof updateHighRollerBoard === 'function') {
-        updateHighRollerBoard();
-    }
+    // Game flow buttons
+    document.getElementById('new-game-btn').addEventListener('click', handleNewGame);
+    document.getElementById('next-round-btn').addEventListener('click', handleNextRound);
+    document.getElementById('end-game-btn').addEventListener('click', handleEndGame);
+
+    // Betting buttons
+    document.querySelectorAll('.chip-btn').forEach(btn => {
+        btn.addEventListener('click', handleChipClick);
+    });
+    document.getElementById('place-bet-btn').addEventListener('click', handlePlaceBet);
+    document.getElementById('clear-bet-btn').addEventListener('click', handleClearBet);
+
+    // Initialize high roller board
+    updateHighRollerBoard();
 })();

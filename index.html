@@ -74,19 +74,65 @@
             transform: rotate(180deg);
         }
 
+        .card-back {
+            width: 50px;
+            height: 70px;
+            border: 1px solid black;
+            border-radius: 5px;
+            background: linear-gradient(45deg, #003366 25%, #0055aa 25%, #0055aa 50%, #003366 50%, #003366 75%, #0055aa 75%);
+            background-size: 10px 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-weight: bold;
+        }
+
         /* Buttons and Controls */
         #game-controls {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 20px;
+            gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
 
-        #hit-btn, #stand-btn {
-            margin: 10px;
-            padding: 5px 10px;
+        #hit-btn, #stand-btn, #double-btn, #split-btn, #surrender-btn, #insurance-btn {
+            padding: 10px 20px;
             font-size: 1em;
+            cursor: pointer;
+            border: 2px solid #333;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        #hit-btn:hover, #stand-btn:hover, #double-btn:hover, #split-btn:hover, #surrender-btn:hover, #insurance-btn:hover {
+            background-color: #45a049;
+        }
+
+        #hit-btn:disabled, #stand-btn:disabled, #double-btn:disabled, #split-btn:disabled, #surrender-btn:disabled, #insurance-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            border-color: #999;
+        }
+
+        #surrender-btn {
+            background-color: #f44336;
+        }
+
+        #surrender-btn:hover {
+            background-color: #da190b;
+        }
+
+        #insurance-btn {
+            background-color: #2196F3;
+        }
+
+        #insurance-btn:hover {
+            background-color: #0b7dda;
         }
 
         #new-game-btn, #next-round-btn, #end-game-btn {
@@ -138,6 +184,72 @@
             margin-top: 20px;
             font-size: 1.2em;
         }
+
+        /* Betting Controls */
+        #betting-controls {
+            margin: 20px;
+            text-align: center;
+        }
+
+        .chip-btn {
+            padding: 10px 15px;
+            margin: 5px;
+            font-size: 1em;
+            cursor: pointer;
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            color: #000;
+            font-weight: bold;
+            width: 60px;
+            height: 60px;
+            transition: all 0.3s;
+        }
+
+        .chip-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .chip-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #place-bet-btn, #clear-bet-btn {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        #place-bet-btn:hover, #clear-bet-btn:hover {
+            background-color: #45a049;
+        }
+
+        #clear-bet-btn {
+            background-color: #f44336;
+        }
+
+        #clear-bet-btn:hover {
+            background-color: #da190b;
+        }
+
+        #place-bet-btn:disabled, #clear-bet-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        #hand-values {
+            margin: 10px 0;
+            font-size: 1.1em;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -146,18 +258,44 @@
     <p>Test your skills against the dealer and try to hit that perfect 21</p>
 </div>
 
+<div id="betting-controls">
+    <h3>Place Your Bet:</h3>
+    <div>
+        <button class="chip-btn" data-amount="5">5</button>
+        <button class="chip-btn" data-amount="10">10</button>
+        <button class="chip-btn" data-amount="25">25</button>
+        <button class="chip-btn" data-amount="50">50</button>
+        <button class="chip-btn" data-amount="100">100</button>
+        <button class="chip-btn" data-amount="500">500</button>
+    </div>
+    <div>
+        <button id="clear-bet-btn">Clear Bet</button>
+        <button id="place-bet-btn">Place Bet & Deal</button>
+    </div>
+</div>
+
 <div id="game-container">
     <div>
         <h2>Dealer's Cards</h2>
+        <div id="hand-values">
+            <span id="dealer-total"></span>
+        </div>
         <div id="dealer-cards"></div>
     </div>
     <div>
         <h2>Your Cards</h2>
+        <div id="hand-values">
+            <span id="player-total"></span>
+        </div>
         <div id="player-cards"></div>
     </div>
     <div id="game-controls">
-        <button id="hit-btn">Hit</button>
-        <button id="stand-btn">Stand</button>
+        <button id="hit-btn" disabled>Hit</button>
+        <button id="stand-btn" disabled>Stand</button>
+        <button id="double-btn" disabled>Double Down</button>
+        <button id="split-btn" disabled>Split</button>
+        <button id="surrender-btn" disabled>Surrender</button>
+        <button id="insurance-btn" disabled>Insurance</button>
     </div>
     <button id="new-game-btn">New Game</button>
     <button id="next-round-btn">Next Round</button>
@@ -170,18 +308,16 @@
 <div id="chip-counts">
     <h3>Chip Counts:</h3>
     <p>Player: <span id="player-chips">1000</span> Git Chips</p>
-    <p>Dealer: <span id="dealer-chips">1000</span> Git Chips</p>
 </div>
 
 <div id="current-bet-display">
     <p>Current Bet: <span id="current-bet">0</span> Git Chips</p>
 </div>
 
-<!--<div id="high-roller-board">
+<div id="high-roller-board">
     <h3>High Roller Board:</h3>
     <ul id="high-rollers-list"></ul>
 </div>
--->
 <div id="rules">
     <h2>Blackjack Rules</h2>
     <p>
